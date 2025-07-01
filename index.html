@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeZone – Your Safety Companion</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f8fb;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    .section-card {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .section-title {
+      font-size: 1.4em;
+      color: #1f2937;
+      margin-bottom: 10px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin: 6px 0;
+      border-radius: 8px;
+    }
+    input {
+      border: 1px solid #ccc;
+    }
+    button {
+      border: none;
+      background-color: #ef4444;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #dc2626;
+    }
+    #profileSaved, #pinError, #sosStatus, #locationDisplay {
+      margin-top: 10px;
+    }
+    #loginScreen input {
+      text-align: center;
+    }
+  </style>
+</head>
+<body onload="displayProfile()">
+
+  <!-- Login Screen -->
+  <div id="loginScreen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f4f4f4; display:flex; justify-content:center; align-items:center; z-index:9999;">
+    <div style="text-align:center;">
+      <h2>🔒 Enter PIN to Access</h2>
+      <input type="password" id="pinInput" placeholder="Enter 4-digit PIN" maxlength="4" />
+      <br><br>
+      <button onclick="checkPIN()">Unlock</button>
+      <p id="pinError" style="color:red; display:none;">❌ Wrong PIN!</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section-card">
+      <h2 class="section-title">🚨 Emergency</h2>
+      <h1>SafeZone – Your Safety Companion</h1>
+      <p>With just one tap, SafeZone helps you alert your emergency contacts and share your location instantly.</p>
+      <button onclick="sendAlert()">Send Emergency Alert</button>
+    </div>
+
+    <div class="section-card">
+      <h2 class="section-title">👤 User Profile</h2>
+      <form id="profileForm">
+        <input type="text" id="name" placeholder="Full Name" required />
+        <input type="text" id="blood" placeholder="Blood Group (e.g. B+)" required />
+        <input type="tel" id="contact" placeholder="Emergency Contact Number" required />
+        <button type="submit">Save Profile</button>
+      </form>
+      <p id="profileSaved" style="display:none; color: green;">✅ Profile Saved Successfully!</p>
+    </div>
+
+    <div class="section-card">
+      <h2 class="section-title">✅ Saved Profile</h2>
+      <div id="profileDisplay">No profile data saved.</div>
+    </div>
+
+    <div class="section-card">
+      <h2 class="section-title">📍 Your Location</h2>
+      <button onclick="getLocation()">📍 Get My Location</button>
+      <p id="locationDisplay">Location not fetched yet.</p>
+    </div>
+
+    <div class="section-card">
+      <h2 class="section-title">📤 Share Emergency Info</h2>
+      <button onclick="shareEmergency()">📲 Send via WhatsApp</button>
+    </div>
+
+    <div class="section-card">
+      <h2 class="section-title">🆘 SOS Auto Alert</h2>
+      <button onclick="startSOS()">Start SOS Timer</button>
+      <p id="sosStatus">Timer not started.</p>
+    </div>
+  </div>
+
+  <audio id="sosAudio" src="sos.mp3"></audio>
+
+  <script>
+    function checkPIN() {
+      const correctPIN = "1234";
+      const userPIN = document.getElementById("pinInput").value;
+      if (userPIN === correctPIN) {
+        document.getElementById("loginScreen").style.display = "none";
+      } else {
+        document.getElementById("pinError").style.display = "block";
+      }
+    }
+
+    function sendAlert() {
+      alert("🚨 Emergency Alert Sent!");
+    }
+
+    document.getElementById("profileForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const blood = document.getElementById("blood").value;
+      const contact = document.getElementById("contact").value;
+      localStorage.setItem("userName", name);
+      localStorage.setItem("userBlood", blood);
+      localStorage.setItem("userContact", contact);
+      document.getElementById("profileSaved").style.display = "block";
+      setTimeout(() => {
+        document.getElementById("profileSaved").style.display = "none";
+      }, 3000);
+      e.target.reset();
+      displayProfile();
+    });
+
+    function displayProfile() {
+      const name = localStorage.getItem("userName");
+      const blood = localStorage.getItem("userBlood");
+      const contact = localStorage.getItem("userContact");
+      if (name && blood && contact) {
+        document.getElementById("profileDisplay").innerHTML = `
+          <strong>Full Name:</strong> ${name}<br>
+          <strong>Blood Group:</strong> ${blood}<br>
+          <strong>Emergency Contact:</strong> ${contact}
+        `;
+      } else {
+        document.getElementById("profileDisplay").innerText = "No profile data saved.";
+      }
+    }
+
+    function getLocation() {
+      const display = document.getElementById("locationDisplay");
+      if (navigator.geolocation) {
+        display.innerText = "Fetching location...";
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          localStorage.setItem("lastLat", lat);
+          localStorage.setItem("lastLon", lon);
+          display.innerHTML = `
+            📌 Latitude: ${lat.toFixed(5)}<br>
+            📌 Longitude: ${lon.toFixed(5)}<br>
+            <a href="https://maps.google.com/?q=${lat},${lon}" target="_blank">🔗 View on Google Maps</a>
+          `;
+        }, function() {
+          display.innerText = "❌ Failed to get location.";
+        });
+      } else {
+        display.innerText = "❌ Geolocation not supported.";
+      }
+    }
+
+    function shareEmergency() {
+      const name = localStorage.getItem("userName") || "Not Available";
+      const blood = localStorage.getItem("userBlood") || "Not Available";
+      const contact = localStorage.getItem("userContact") || "Not Available";
+      const lat = localStorage.getItem("lastLat") || "Not Available";
+      const lon = localStorage.getItem("lastLon") || "Not Available";
+      const link = lat !== "Not Available" && lon !== "Not Available"
+        ? `https://maps.google.com/?q=${lat},${lon}` : "Location not available";
+      const msg = `🚨 *Emergency Alert!*\nName: ${name}\nBlood Group: ${blood}\nContact: ${contact}\nLocation: ${link}`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+
+    function startSOS() {
+      const status = document.getElementById("sosStatus");
+      let countdown = 10;
+      status.innerText = `⏳ SOS will activate in ${countdown} seconds...`;
+      const interval = setInterval(() => {
+        countdown--;
+        status.innerText = `⏳ SOS will activate in ${countdown} seconds...`;
+        if (countdown === 0) {
+          clearInterval(interval);
+          status.innerText = "🚨 SOS Activated!";
+          document.getElementById("sosAudio").play();
+          sendEmergencyAlert();
+        }
+      }, 1000);
+    }
+
+    function sendEmergencyAlert() {
+      const name = localStorage.getItem("userName") || "Not Available";
+      const blood = localStorage.getItem("userBlood") || "Not Available";
+      const contact = localStorage.getItem("userContact") || "Not Available";
+      const lat = localStorage.getItem("lastLat") || "Not Available";
+      const lon = localStorage.getItem("lastLon") || "Not Available";
+      const link = lat !== "Not Available" && lon !== "Not Available"
+        ? `https://maps.google.com/?q=${lat},${lon}` : "Location not available";
+      const msg = `🚨 *SOS Emergency Alert!*\nName: ${name}\nBlood Group: ${blood}\nContact: ${contact}\nLocation: ${link}`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+  </script>
+</body>
+</html>
